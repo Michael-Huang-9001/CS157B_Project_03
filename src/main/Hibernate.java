@@ -76,7 +76,7 @@ public class Hibernate {
 					update();
 					break;
 				case ("3"):
-					System.out.println(3);
+					delete();
 					break;
 				case ("4"):
 					listSales();
@@ -95,6 +95,16 @@ public class Hibernate {
 			in.close();
 		}
 	}
+	
+	/**
+	 * Lists all items in the inventory, NOT IN THE SQL LEVEL.
+	 */
+	public static void listItems() {
+		System.out.println(String.format("%-25s %-10s", "Item name", "Item Price"));
+		for (String key : inventory.keySet()) {
+			System.out.println(String.format("%-25s %-10s", key, inventory.get(key)));
+		}
+	}
 
 	/**
 	 * Prompts to insert a sale transaction.
@@ -102,10 +112,7 @@ public class Hibernate {
 	public static void buy() {
 		System.out.println("What would you like to buy? Enter the item name.");
 		System.out.println("- Listing all items...");
-		System.out.println(String.format("%-25s %-10s", "Item name", "Item Price"));
-		for (String key : inventory.keySet()) {
-			System.out.println(String.format("%-25s %-10s", key, inventory.get(key)));
-		}
+		listItems();
 		System.out.print("> ");
 		input = in.nextLine();
 		if (inventory.containsKey(input)) {
@@ -128,6 +135,7 @@ public class Hibernate {
 			System.out.println("You entered: " + input);
 			System.out.println("Item specified is not in inventory.");
 		}
+		System.out.println("---");
 	}
 
 	/**
@@ -143,8 +151,8 @@ public class Hibernate {
 			tx = s.beginTransaction();
 			// Input should be the sales_id, which is the primary key.
 			SaleTransaction sale = (SaleTransaction) s.load(SaleTransaction.class, Integer.parseInt(input));
-			System.out.println();
-			System.out.print("New product name?\n> ");
+			listItems();
+			System.out.print("---\nNew product name?\n> ");
 			input = in.nextLine();
 			if (input.isEmpty()) {
 				throw new Exception("The updated product name is empty.");
@@ -172,6 +180,35 @@ public class Hibernate {
 			}
 			System.out.println(e.getMessage());
 		}
+		System.out.println("---");
+	}
+	
+	/**
+	 * Prompts to delete a sale from the database.
+	 */
+	public static void delete() {
+		System.out.println("What would you like to delete? Enter the Sales ID to select the deletion target.");
+		listSales();
+		System.out.print("> ");
+		input = in.nextLine();
+		Transaction tx = null;
+		try {
+			tx = s.beginTransaction();
+			// Input should be the sales_id, which is the primary key.
+			SaleTransaction sale = (SaleTransaction) s.load(SaleTransaction.class, Integer.parseInt(input));
+			System.out.println("Attempting to delete the selected sale transaction...");
+			s.delete(sale);
+			tx.commit();
+		} catch (ObjectNotFoundException e) {
+			System.out.println("No sale transaction for Sale ID specified.");
+		} catch (Exception e) {
+			if (tx != null) {
+				System.out.println("-- Rolling back transaction...");
+				tx.rollback();
+			}
+			System.out.println(e.getMessage());
+		}
+		System.out.println("---");
 	}
 
 	/**
@@ -280,6 +317,10 @@ public class Hibernate {
 		return sales;
 	}
 
+	/**
+	 * Method to generate a new timestamp for the current moment.
+	 * @return a new timestamp representing the instance it was generated
+	 */
 	public Timestamp now() {
 		return new Timestamp(new java.util.Date().getTime());
 	}
