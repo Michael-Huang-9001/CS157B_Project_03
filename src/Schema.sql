@@ -26,9 +26,10 @@ CONSTRAINT i_id FOREIGN KEY(item_id) REFERENCES items(item_id) ON UPDATE CASCADE
 */
 
 CREATE TABLE sales(
-timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP PRIMARY KEY,
+sales_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 product_name VARCHAR(50) NOT NULL,
-quantity int not null,
-unit_cost double not null,
-total_cost double not null
+quantity INT NOT NULL,
+unit_cost DOUBLE NOT NULL,
+total_cost DOUBLE NOT NULL
 );
