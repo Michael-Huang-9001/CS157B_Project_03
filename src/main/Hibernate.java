@@ -66,7 +66,7 @@ public class Hibernate {
 		try {
 			while (true) {
 				System.out.println("What would you like to do?");
-				System.out.println("1: Buy\t\t2: Update\t3: Delete\t4: See all sales\t5: Find item sold by time");
+				System.out.println("1: Buy\t\t2: Update\t3: Delete\t4: See all sales\t5: Find item sold by time\t6: Find number of a soecific item sold since last month");
 				System.out.print("> ");
 				input = in.nextLine();
 				switch (input) {
@@ -86,7 +86,7 @@ public class Hibernate {
 					showSalesTimeRange();
 					break;
 				case ("6"):
-					// ADD AGGREGATE FUNCTIONS HERE
+					showSalesTimeRange1();
 					break;
 				case ("q"):
 					System.out.println("See ya.");
@@ -261,6 +261,35 @@ public class Hibernate {
 		}
 	}
 
+	public static void showSalesTimeRange1() {
+		Transaction tx = null;
+		try {
+			tx = s.beginTransaction();
+
+			System.out.print("Please enter the sold item you would like to search for:\n> ");
+			String product_name = in.nextLine();
+
+			int month = now().getMonth() - 1;
+			int year = 1900 + now().getYear();
+			String date = year + "-" + month + "-01";
+			System.out.println(date);
+
+			Object result = s.createQuery(
+					"SELECT sum(quantity) FROM sales WHERE product_name LIKE '%" + product_name + "%' AND timestamp >= '" + date + "'")
+					.uniqueResult();
+
+			System.out.print("Number of items sold with names like '" + product_name + "':");
+			System.out.println(result);
+			tx.commit();
+		} catch (Exception e) {
+			if (tx != null) {
+				System.out.println("- Rolling back transaction...");
+				tx.rollback();
+			}
+			System.out.println(e.getMessage());
+		}
+	}
+
 	/**
 	 * Inserting sample sales.
 	 */
@@ -373,7 +402,7 @@ public class Hibernate {
 	 * 
 	 * @return a new timestamp representing the instance it was generated
 	 */
-	public Timestamp now() {
+	public static Timestamp now() {
 		return new Timestamp(new java.util.Date().getTime());
 	}
 }
