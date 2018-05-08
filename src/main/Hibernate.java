@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -65,7 +66,7 @@ public class Hibernate {
 		try {
 			while (true) {
 				System.out.println("What would you like to do?");
-				System.out.println("1: Buy\t\t2: Update\t3: Delete\t4: See all sales");
+				System.out.println("1: Buy\t\t2: Update\t3: Delete\t4: See all sales\t5: Find item sold by time");
 				System.out.print("> ");
 				input = in.nextLine();
 				switch (input) {
@@ -81,6 +82,12 @@ public class Hibernate {
 				case ("4"):
 					listSales();
 					break;
+				case ("5"):
+					showSalesTimeRange();
+					break;
+				case ("6"):
+					// ADD AGGREGATE FUNCTIONS HERE
+					break;
 				case ("q"):
 					System.out.println("See ya.");
 					break;
@@ -95,7 +102,7 @@ public class Hibernate {
 			in.close();
 		}
 	}
-	
+
 	/**
 	 * Lists all items in the inventory, NOT IN THE SQL LEVEL.
 	 */
@@ -182,7 +189,7 @@ public class Hibernate {
 		}
 		System.out.println("---");
 	}
-	
+
 	/**
 	 * Prompts to delete a sale from the database.
 	 */
@@ -211,6 +218,49 @@ public class Hibernate {
 		System.out.println("---");
 	}
 
+	public static void showSalesTimeRange() {
+		Transaction tx = null;
+		try {
+			tx = s.beginTransaction();
+
+			System.out.print("Please enter the sold item you would like to search for:\n> ");
+			String product_name = in.nextLine();
+
+			System.out.print("Please enter the starting date to show all sales for (use the format yyyy-mm-dd):\n> ");
+			input = in.nextLine();
+
+			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+			java.util.Date startDate = format.parse(input);
+
+			System.out.print("Please enter the end date to show all sales for (use the format yyyy-mm-dd):\n> ");
+			input = in.nextLine();
+			java.util.Date endDate = format.parse(input);
+
+			Timestamp start = new Timestamp(startDate.getTime());
+			Timestamp end = new Timestamp(endDate.getTime());
+
+			List<SaleTransaction> results = s
+					.createQuery("FROM sales WHERE product_name LIKE '%" + product_name + "%' AND timestamp > '"
+							+ start.toString() + "' AND timestamp < '" + end.toString() + "' ORDER BY timestamp ASC")
+					.list();
+
+			System.out.println("Printing out sale transactions with search term '" + product_name + "' and between "
+					+ start.toString() + " and " + end.toString() + "...");
+			System.out.println(String.format("%-10s %-30s %-10s %-10s %-10s %-20s", "Sales ID", "Product Name",
+					"Quantity", "Unit Cost", "Total Cost", "Timestamp"));
+			for (SaleTransaction sale : results) {
+				System.out.println(sale.toString());
+			}
+			tx.commit();
+		} catch (Exception e) {
+			if (tx != null) {
+				System.out.println("- Rolling back transaction...");
+				tx.rollback();
+			}
+			System.out.println(e.getMessage());
+		}
+	}
+
 	/**
 	 * Inserting sample sales.
 	 */
@@ -225,7 +275,7 @@ public class Hibernate {
 			sale.setUnitCost(unit_cost);
 			sale.setTotalCost(unit_cost * quantity);
 			s.save(sale);
-			System.out.println("Inserted a sale transaction:\n" + sale.toString() + "\n---");
+			System.out.println("Inserted a sale transaction:\n" + sale.toString());
 			tx.commit();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -313,12 +363,14 @@ public class Hibernate {
 				System.out.println("-- Could not sleep for 1.5 seconds between sale transactions.");
 			}
 		}
+
 		System.out.println("Generated some sales.");
 		return sales;
 	}
 
 	/**
 	 * Method to generate a new timestamp for the current moment.
+	 * 
 	 * @return a new timestamp representing the instance it was generated
 	 */
 	public Timestamp now() {
